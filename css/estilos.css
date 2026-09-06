@@ -1,0 +1,87 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background-color: #f4f4f4;
+  color: #1a1a1a;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+header {
+  background-color: #1A2B6A;
+  color: white;
+  padding: 16px 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+main {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+button, .boton {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.boton-primario {
+  background-color: #1A2B6A;
+  color: rgb(238, 129, 5);
+}
+
+.boton-secundario {
+  background-color: white;
+  color: #1A2B6A;
+  border: 1px solid #1A2B6A;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 4px;
+}
+
+label {
+  font-size: 13px;
+  color: #555;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.campo {
+  margin-bottom: 12px;
+}
+
+.pie {
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  margin-top: 30px;
+}
+
+.tarjeta {
+  background-color: white;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #ddd;
+}
