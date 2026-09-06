@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gastos</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila-gasto {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .eliminar {
+      background: none;
+      border: none;
+      color: #b00020;
+      font-size: 13px;
+      width: auto;
+      padding: 4px 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>Gastos</header>
+  <main>
+    <div id="listaGastos"></div>
+
+    <div class="campo">
+      <label>Concepto (ej. peaje, combustible)</label>
+      <input id="concepto" type="text">
+    </div>
+    <div class="campo">
+      <label>Monto</label>
+      <input id="monto" type="text" inputmode="numeric">
+    </div>
+    <button class="boton-primario" id="botonGuardar">Guardar gasto</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    document.getElementById("monto").addEventListener("input", (evento) => {
+      const soloDigitos = evento.target.value.replace(/\D/g, "");
+      evento.target.value = soloDigitos ? formatoMiles(Number(soloDigitos)) : "";
+    });
+
+    async function refrescarLista() {
+      const gastos = await RutaDao.obtenerPorRuta("gastos", rutaId);
+      const contenedor = document.getElementById("listaGastos");
+      contenedor.innerHTML = "";
+
+      gastos.forEach((gasto) => {
+        const fila = document.createElement("div");
+        fila.className = "fila-gasto";
+        fila.innerHTML = `
+          <div>${gasto.concepto}</div>
+          <div>-$${formatoMiles(gasto.monto)}</div>
+          <button class="eliminar" data-id="${gasto.id}">Eliminar</button>
+        `;
+        contenedor.appendChild(fila);
+      });
+
+      contenedor.querySelectorAll(".eliminar").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          const confirmado = confirm("¿Eliminar este gasto? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          await RutaDao.eliminarDe("gastos", Number(boton.dataset.id));
+          refrescarLista();
+        });
+      });
+    }
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const concepto = document.getElementById("concepto").value.trim();
+      const monto = parseInt(document.getElementById("monto").value.replace(/\./g, "")) || 0;
+
+      if (!concepto || monto <= 0) {
+        alert("Completa el concepto y el monto antes de guardar");
+        return;
+      }
+
+      await RutaDao.insertarEn("gastos", { rutaId, concepto, monto });
+
+      document.getElementById("concepto").value = "";
+      document.getElementById("monto").value = "";
+      refrescarLista();
+    });
+
+    refrescarLista();
+  </script>
+</body>
+</html>

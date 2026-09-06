@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conteo de billetes</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila-denom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    .fila-denom .info div:first-child {
+      font-weight: 500;
+    }
+    .fila-denom .info div:last-child {
+      font-size: 13px;
+      color: #666;
+    }
+    .boton-mas {
+      width: auto;
+      padding: 8px 16px;
+      background: white;
+      border: 1px solid #1A2B6A;
+      color: #1A2B6A;
+    }
+    .detalle {
+      display: none;
+      padding: 0 0 10px 20px;
+    }
+    .detalle.abierto {
+      display: block;
+    }
+    .fila-registro {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 4px 0;
+    }
+    .fila-registro .corregir {
+      background: none;
+      border: none;
+      color: #b00020;
+      width: auto;
+      padding: 0;
+      font-size: 12px;
+    }
+    .total-final {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 500;
+      font-size: 16px;
+      margin-top: 16px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.abierto {
+      display: flex;
+    }
+    .modal-contenido {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      width: 85%;
+      max-width: 320px;
+    }
+  </style>
+</head>
+<body>
+  <header>Conteo de billetes</header>
+  <main>
+    <div id="listaDenominaciones"></div>
+    <div class="total-final">
+      <span>Total en billetes</span>
+      <span id="totalBilletes">$0</span>
+    </div>
+  </main>
+
+  <div class="modal" id="modalAgregar">
+    <div class="modal-contenido">
+      <p id="tituloModal" style="margin-bottom:12px;font-weight:500"></p>
+      <div class="campo">
+        <label>Cantidad contada ahora</label>
+        <input id="cantidadModal" type="text" inputmode="numeric">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="boton-secundario" id="botonCancelarModal">Cancelar</button>
+        <button class="boton-primario" id="botonConfirmarModal">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/core.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+    let denominacionActual = null;
+    const expandidas = new Set();
+
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    async function refrescar() {
+      const conteoBilletes = await RutaDao.obtenerPorRuta("conteoBilletes", rutaId);
+      const contenedor = document.getElementById("listaDenominaciones");
+      contenedor.innerHTML = "";
+
+      let totalGeneral = 0;
+
+      DENOMINACIONES.forEach((denom) => {
+        const registros = conteoBilletes.filter((c) => c.denominacion === denom.nombre);
+        const cantidad = registros.reduce((suma, r) => suma + r.cantidad, 0);
+        const total = cantidad * denom.valor;
+        totalGeneral += total;
+
+        const fila = document.createElement("div");
+        fila.innerHTML = `
+          <div class="fila-denom" data-denom="${denom.nombre}">
+            <div class="info">
+              <div>$${formatoMiles(denom.valor)}</div>
+              <div>${cantidad} billetes${registros.length > 1 ? ` · ${registros.length} registros (toca para ver)` : ""}</div>
+            </div>
+            <button class="boton-mas" data-denom-boton="${denom.nombre}">+</button>
+          </div>
+          <div class="detalle ${expandidas.has(denom.nombre) ? "abierto" : ""}" id="detalle-${denom.nombre}">
+            ${registros.map((registro, indice) => `
+              <div class="fila-registro">
+                <span>${indice + 1}. ${registro.cantidad} billetes</span>
+                <button class="corregir" data-id="${registro.id}">Corregir</button>
+              </div>
+            `).join("")}
+          </div>
+        `;
+        contenedor.appendChild(fila);
+      });
+
+      document.getElementById("totalBilletes").textContent = `$${formatoMiles(totalGeneral)}`;
+
+      contenedor.querySelectorAll(".fila-denom").forEach((fila) => {
+        fila.addEventListener("click", (evento) => {
+          if (evento.target.tagName === "BUTTON") return;
+          const denom = fila.dataset.denom;
+          if (expandidas.has(denom)) {
+            expandidas.delete(denom);
+          } else {
+            expandidas.add(denom);
+          }
+          refrescar();
+        });
+      });
+
+      contenedor.querySelectorAll("[data-denom-boton]").forEach((boton) => {
+        boton.addEventListener("click", (evento) => {
+          evento.stopPropagation();
+          denominacionActual = DENOMINACIONES.find((d) => d.nombre === boton.dataset.denomBoton);
+          document.getElementById("tituloModal").textContent = `Billetes de $${formatoMiles(denominacionActual.valor)}`;
+          document.getElementById("cantidadModal").value = "";
+          document.getElementById("modalAgregar").classList.add("abierto");
+        });
+      });
+
+      contenedor.querySelectorAll(".corregir").forEach((boton) => {
+        boton.addEventListener("click", async (evento) => {
+          evento.stopPropagation();
+          const confirmado = confirm("¿Corregir (eliminar) este registro? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          await RutaDao.eliminarDe("conteoBilletes", Number(boton.dataset.id));
+          refrescar();
+        });
+      });
+    }
+
+    document.getElementById("botonCancelarModal").addEventListener("click", () => {
+      document.getElementById("modalAgregar").classList.remove("abierto");
+    });
+
+    document.getElementById("botonConfirmarModal").addEventListener("click", async () => {
+      const cantidad = parseInt(document.getElementById("cantidadModal").value) || 0;
+      if (cantidad <= 0) return;
+
+      await RutaDao.insertarEn("conteoBilletes", {
+        rutaId,
+        denominacion: denominacionActual.nombre,
+        cantidad,
+      });
+
+      document.getElementById("modalAgregar").classList.remove("abierto");
+      refrescar();
+    });
+
+    refrescar();
+  </script>
+</body>
+</html>

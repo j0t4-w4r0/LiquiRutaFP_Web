@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquidación de rutas</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1A2B6A">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header>Liquidación de rutas</header>
+  <main>
+    <a class="boton boton-primario" href="nueva-ruta.html">Nueva ruta</a>
+    <a class="boton boton-secundario" href="historial.html">Historial de rutas</a>
+    <a class="boton boton-secundario" href="descuento.html">Descuento de productos</a>
+    <p class="pie">By El Waro</p>
+  </main>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
+</body>
+</html>

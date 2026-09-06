@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar ruta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header>Editar datos de la ruta</header>
+  <main>
+    <div class="campo">
+      <label>Nombre de la ruta</label>
+      <input id="nombreRuta" type="text">
+    </div>
+    <div class="campo">
+      <label>Conductor</label>
+      <input id="conductor" type="text">
+    </div>
+    <div class="campo">
+      <label>Auxiliar de ruta</label>
+      <input id="auxiliar" type="text">
+    </div>
+    <div class="campo">
+      <label>Fecha</label>
+      <input id="fecha" type="date">
+    </div>
+    <div class="campo">
+      <label>Número de facturas entregadas</label>
+      <input id="numeroFacturas" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Anticipo</label>
+      <input id="anticipo" type="text" inputmode="numeric">
+    </div>
+    <button class="boton-primario" id="botonGuardar">Guardar cambios</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+    let rutaOriginal = null;
+
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    document.getElementById("anticipo").addEventListener("input", (evento) => {
+      const soloDigitos = evento.target.value.replace(/\D/g, "");
+      evento.target.value = soloDigitos ? formatoMiles(Number(soloDigitos)) : "";
+    });
+
+    async function cargar() {
+      rutaOriginal = await RutaDao.obtenerRuta(rutaId);
+      document.getElementById("nombreRuta").value = rutaOriginal.nombre;
+      document.getElementById("conductor").value = rutaOriginal.conductor;
+      document.getElementById("auxiliar").value = rutaOriginal.auxiliar;
+      document.getElementById("fecha").value = rutaOriginal.fecha;
+      document.getElementById("numeroFacturas").value = rutaOriginal.numeroFacturasEntregadas;
+      document.getElementById("anticipo").value = formatoMiles(rutaOriginal.anticipo || 0);
+    }
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const nombreRuta = document.getElementById("nombreRuta").value.trim();
+      const conductor = document.getElementById("conductor").value.trim();
+
+      if (!nombreRuta || !conductor) {
+        alert("Completa al menos nombre y conductor");
+        return;
+      }
+
+      await RutaDao.actualizarRuta({
+        ...rutaOriginal,
+        nombre: nombreRuta,
+        conductor,
+        auxiliar: document.getElementById("auxiliar").value.trim(),
+        fecha: document.getElementById("fecha").value,
+        numeroFacturasEntregadas: parseInt(document.getElementById("numeroFacturas").value) || 0,
+        anticipo: parseInt(document.getElementById("anticipo").value.replace(/\./g, "")) || 0,
+      });
+
+      window.location.href = `ruta.html?id=${rutaId}`;
+    });
+
+    cargar();
+  </script>
+</body>
+</html>

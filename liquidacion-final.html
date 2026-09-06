@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquidación final</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .fila.destacado {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>Liquidación final</header>
+  <main id="contenido"></main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/logo.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    function fila(etiqueta, valor, destacado) {
+      return `<div class="fila ${destacado ? "destacado" : ""}"><span>${etiqueta}</span><span>${valor}</span></div>`;
+    }
+
+    let datos = null;
+
+    async function cargar() {
+      datos = await RutaDao.obtenerRutaConDetalles(rutaId);
+      const resumen = LiquidacionCalculator.calcular(datos);
+
+      let html = "";
+      html += fila("Total facturas en efectivo", `$${formatoMiles(resumen.totalFacturasEfectivo)}`);
+      html += fila("Total abonos y cobros en efectivo", `$${formatoMiles(resumen.totalAbonosYCobros)}`);
+      html += fila("Total gastos", `-$${formatoMiles(resumen.totalGastos)}`);
+      html += "<hr>";
+      html += fila("Total a liquidar", `$${formatoMiles(resumen.totalALiquidar)}`, true);
+
+      html += "<p style='margin-top:16px;font-weight:500'>Arqueo por denominación</p>";
+      DENOMINACIONES.forEach((denom) => {
+        const total = resumen.totalPorDenominacion[denom.nombre];
+        const cantidad = total / denom.valor;
+        html += fila(`$${formatoMiles(denom.valor)} × ${cantidad} billetes`, `$${formatoMiles(total)}`);
+      });
+      html += "<hr>";
+      html += fila("Total en billetes", `$${formatoMiles(resumen.totalEnBilletes)}`);
+      html += fila("Monedas", `$${formatoMiles(resumen.monedas)}`, true);
+
+      html += `<button class="boton-primario" id="botonPdf" style="margin-top:20px">Generar PDF</button>`;
+      html += `<div id="zonaAbrir"></div>`;
+
+      document.getElementById("contenido").innerHTML = html;
+      document.getElementById("botonPdf").addEventListener("click", generarPdf);
+
+      if (datos.ruta.pdfDataUrl) {
+        mostrarBotonAbrir(datos.ruta.pdfDataUrl);
+      }
+    }
+
+    function dataUrlABlob(dataUrl) {
+      const partes = dataUrl.split(",");
+      const mime = partes[0].match(/:(.*?);/)[1];
+      const binario = atob(partes[1]);
+      const arreglo = new Uint8Array(binario.length);
+      for (let i = 0; i < binario.length; i++) {
+        arreglo[i] = binario.charCodeAt(i);
+      }
+      return new Blob([arreglo], { type: mime });
+    }
+
+    function mostrarBotonAbrir(dataUrlPdf) {
+      document.getElementById("zonaAbrir").innerHTML = `
+        <button class="boton boton-secundario" id="botonAbrirPdf" style="margin-top:8px">Abrir PDF</button>
+      `;
+      document.getElementById("botonAbrirPdf").addEventListener("click", () => {
+        const blob = dataUrlABlob(dataUrlPdf);
+        const nombreArchivo = `Comprobante_${datos.ruta.nombre.replace(/\s+/g, "_")}_${datos.ruta.fecha}.pdf`;
+        const archivo = new File([blob], nombreArchivo, { type: "application/pdf" });
+        const urlTemporal = URL.createObjectURL(archivo);
+        window.open(urlTemporal, "_blank");
+      });
+    }
+
+    async function generarPdf() {
+      const { jsPDF } = window.jspdf;
+      const documento = new jsPDF({ unit: "pt", format: "a4" });
+      const resumen = LiquidacionCalculator.calcular(datos);
+      const ruta = datos.ruta;
+      documento.setProperties({ title: `Comprobante ${ruta.nombre} ${ruta.fecha}` });
+
+      documento.addImage(LOGO_FP_BASE64, "PNG", 40, 30, 45, 45);
+
+      documento.setFontSize(18);
+      documento.setFont(undefined, "bold");
+      documento.text("Comprobante de liquidación de ruta", 297, 100, { align: "center" });
+
+      let y = 130;
+      function filaPdf(etiqueta, valor) {
+        documento.setFontSize(11);
+        documento.setFont(undefined, "normal");
+        documento.text(etiqueta, 40, y);
+        documento.setFont(undefined, "bold");
+        documento.text(valor, 555, y, { align: "right" });
+        y += 18;
+      }
+
+      filaPdf("Ruta", ruta.nombre);
+      filaPdf("Conductor", ruta.conductor);
+      filaPdf("Auxiliar de ruta", ruta.auxiliar);
+      filaPdf("Fecha", ruta.fecha);
+      filaPdf("N.° de facturas", String(ruta.numeroFacturasEntregadas));
+      filaPdf("Anticipo", `$${formatoMiles(ruta.anticipo)}`);
+
+      y += 8;
+      documento.setFontSize(12);
+      documento.setFont(undefined, "bold");
+      documento.text("Resumen de liquidación en efectivo", 40, y);
+      y += 20;
+
+      filaPdf("Total facturas en efectivo", `$${formatoMiles(resumen.totalFacturasEfectivo)}`);
+      filaPdf("Total abonos y cobros en efectivo", `$${formatoMiles(resumen.totalAbonosYCobros)}`);
+      filaPdf("Total gastos", `-$${formatoMiles(resumen.totalGastos)}`);
+
+      documento.setFontSize(12);
+      documento.setFont(undefined, "bold");
+      documento.text("Total a liquidar", 40, y);
+      documento.setTextColor(15, 110, 86);
+      documento.text(`$${formatoMiles(resumen.totalALiquidar)}`, 555, y, { align: "right" });
+      documento.setTextColor(0);
+      y += 25;
+
+      documento.setFontSize(12);
+      documento.text("Arqueo por denominación de billetes", 40, y);
+      y += 20;
+
+      DENOMINACIONES.forEach((denom) => {
+        const total = resumen.totalPorDenominacion[denom.nombre];
+        const cantidad = total / denom.valor;
+        filaPdf(`$${formatoMiles(denom.valor)} × ${cantidad} billetes`, `$${formatoMiles(total)}`);
+      });
+
+      filaPdf("Total en billetes", `$${formatoMiles(resumen.totalEnBilletes)}`);
+      documento.setFontSize(12);
+      documento.setFont(undefined, "bold");
+      documento.text("Monedas", 40, y);
+      documento.setTextColor(15, 110, 86);
+      documento.text(`$${formatoMiles(resumen.monedas)}`, 555, y, { align: "right" });
+      documento.setTextColor(0);
+
+      const yFirma = 780;
+      documento.setDrawColor(150);
+      documento.line(197, yFirma, 397, yFirma);
+      documento.setFontSize(10);
+      documento.setFont(undefined, "normal");
+      documento.setTextColor(100);
+      documento.text("Responsable de ruta", 297, yFirma + 15, { align: "center" });
+      documento.setTextColor(0);
+
+      documento.addPage();
+      let y2 = 60;
+      documento.setFontSize(12);
+      documento.setFont(undefined, "bold");
+      documento.text("Gastos Detallados", 40, y2);
+      y2 += 22;
+
+      if (datos.gastos.length === 0) {
+        documento.setFontSize(11);
+        documento.setFont(undefined, "normal");
+        documento.text("Sin gastos registrados en esta ruta.", 40, y2);
+        y2 += 18;
+      } else {
+        datos.gastos.forEach((gasto) => {
+          documento.setFontSize(11);
+          documento.setFont(undefined, "normal");
+          documento.text(gasto.concepto, 40, y2);
+          documento.text(`-$${formatoMiles(gasto.monto)}`, 555, y2, { align: "right" });
+          y2 += 18;
+        });
+      }
+
+      y2 += 25;
+      documento.setFontSize(12);
+      documento.setFont(undefined, "bold");
+      documento.text("Novedades Registradas En Ruta", 40, y2);
+      y2 += 22;
+
+      if (datos.notas.length === 0) {
+        documento.setFontSize(11);
+        documento.setFont(undefined, "normal");
+        documento.text("Sin observaciones registradas en esta ruta.", 40, y2);
+      } else {
+        datos.notas.forEach((nota) => {
+          documento.setFontSize(11);
+          documento.setFont(undefined, "bold");
+          documento.text(`Factura FEFP${nota.numeroFactura} · ${nota.cliente}`, 40, y2);
+          y2 += 16;
+          documento.setFont(undefined, "normal");
+          documento.text(nota.observacion, 40, y2);
+          y2 += 24;
+        });
+      }
+
+      const urlPdf = documento.output("datauristring");
+      await RutaDao.actualizarRuta({ ...ruta, cerrada: true, pdfDataUrl: urlPdf });
+      mostrarBotonAbrir(urlPdf);
+    }
+
+    cargar();
+  </script>
+</body>
+</html>

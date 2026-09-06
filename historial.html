@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial de rutas</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila-ruta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    .fila-ruta .info div:last-child {
+      font-size: 13px;
+      color: #666;
+    }
+    .eliminar {
+      background: none;
+      border: none;
+      color: #b00020;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>Historial de rutas</header>
+  <main id="contenido"></main>
+
+  <script src="js/db.js"></script>
+  <script>
+    async function refrescar() {
+      const rutas = await RutaDao.obtenerTodasLasRutas();
+      const contenedor = document.getElementById("contenido");
+
+      if (rutas.length === 0) {
+        contenedor.innerHTML = "<p>Todavía no has creado ninguna ruta.</p>";
+        return;
+      }
+
+      contenedor.innerHTML = "";
+      rutas.forEach((ruta) => {
+        const fila = document.createElement("div");
+        fila.className = "fila-ruta";
+        fila.innerHTML = `
+          <div class="info">
+            <div>${ruta.nombre}</div>
+            <div>${ruta.conductor} · ${ruta.fecha} · ${ruta.cerrada ? "Cerrada" : "En curso"}</div>
+          </div>
+          <button class="eliminar" data-id="${ruta.id}">Eliminar</button>
+        `;
+        fila.addEventListener("click", (evento) => {
+          if (evento.target.tagName === "BUTTON") return;
+          window.location.href = `ruta.html?id=${ruta.id}`;
+        });
+        contenedor.appendChild(fila);
+      });
+
+      contenedor.querySelectorAll(".eliminar").forEach((boton) => {
+        boton.addEventListener("click", async (evento) => {
+          evento.stopPropagation();
+          const confirmado = confirm("¿Eliminar esta ruta y todo lo que tiene registrado? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          const id = Number(boton.dataset.id);
+          for (const store of ["facturas", "gastos", "notas", "conteoBilletes"]) {
+            const registros = await RutaDao.obtenerPorRuta(store, id);
+            for (const registro of registros) {
+              await RutaDao.eliminarDe(store, registro.id);
+            }
+          }
+          await RutaDao.eliminarRuta(id);
+          refrescar();
+        });
+      });
+    }
+
+    refrescar();
+  </script>
+</body>
+</html>

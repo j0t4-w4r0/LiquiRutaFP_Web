@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nueva ruta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header>Nueva liquidación</header>
+  <main>
+    <div class="campo">
+      <label>Nombre de la ruta</label>
+      <input id="nombreRuta" type="text">
+    </div>
+    <div class="campo">
+      <label>Conductor</label>
+      <input id="conductor" type="text">
+    </div>
+    <div class="campo">
+      <label>Auxiliar de ruta</label>
+      <input id="auxiliar" type="text">
+    </div>
+    <div class="campo">
+      <label>Fecha</label>
+      <input id="fecha" type="date">
+    </div>
+    <div class="campo">
+      <label>Número de facturas entregadas</label>
+      <input id="numeroFacturas" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Anticipo</label>
+      <input id="anticipo" type="text" inputmode="numeric">
+    </div>
+    <button class="boton-primario" id="botonGuardar">Iniciar ruta</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    document.getElementById("anticipo").addEventListener("input", (evento) => {
+      const soloDigitos = evento.target.value.replace(/\D/g, "");
+      evento.target.value = soloDigitos ? formatoMiles(Number(soloDigitos)) : "";
+    });
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const nombreRuta = document.getElementById("nombreRuta").value.trim();
+      const conductor = document.getElementById("conductor").value.trim();
+      const auxiliar = document.getElementById("auxiliar").value.trim();
+      const fecha = document.getElementById("fecha").value;
+      const numeroFacturas = parseInt(document.getElementById("numeroFacturas").value) || 0;
+      const anticipo = parseInt(document.getElementById("anticipo").value.replace(/\./g, "")) || 0;
+
+      if (!nombreRuta || !conductor || !auxiliar) {
+        alert("Completa nombre, conductor y auxiliar antes de continuar");
+        return;
+      }
+
+      const id = await RutaDao.insertarRuta({
+        nombre: nombreRuta,
+        conductor,
+        auxiliar,
+        fecha,
+        numeroFacturasEntregadas: numeroFacturas,
+        anticipo,
+        cerrada: false,
+      });
+
+      window.location.href = `ruta.html?id=${id}`;
+    });
+  </script>
+</body>
+</html>

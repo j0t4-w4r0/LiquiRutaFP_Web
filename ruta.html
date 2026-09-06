@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruta en curso</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header id="encabezado">Ruta en curso</header>
+  <main>
+    <a class="boton boton-secundario" id="linkFacturas" href="#">Registro de facturas</a>
+    <a class="boton boton-secundario" id="linkGastos" href="#">Gastos</a>
+    <a class="boton boton-secundario" id="linkNotas" href="#">Notas de facturas</a>
+    <a class="boton boton-secundario" id="linkBilletes" href="#">Conteo de billetes</a>
+    <a class="boton boton-secundario" id="linkEditar" href="#">Editar datos de la ruta</a>
+    <a class="boton boton-primario" id="linkLiquidacion" href="#">Liquidación final</a>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+
+    document.getElementById("linkFacturas").href = `registro-facturas.html?id=${rutaId}`;
+    document.getElementById("linkGastos").href = `gastos.html?id=${rutaId}`;
+    document.getElementById("linkNotas").href = `notas.html?id=${rutaId}`;
+    document.getElementById("linkBilletes").href = `conteo-billetes.html?id=${rutaId}`;
+    document.getElementById("linkEditar").href = `editar-ruta.html?id=${rutaId}`;
+    document.getElementById("linkLiquidacion").href = `liquidacion-final.html?id=${rutaId}`;
+
+    RutaDao.obtenerRuta(rutaId).then((ruta) => {
+      if (ruta) {
+        document.getElementById("encabezado").textContent = `${ruta.nombre} - ${ruta.fecha}`;
+      }
+    });
+  </script>
+</body>
+</html>

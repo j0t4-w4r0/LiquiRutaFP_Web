@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Prueba del motor de cálculo</title>
+  <style>
+    body { font-family: monospace; padding: 20px; font-size: 15px; }
+    .ok { color: green; }
+    .fail { color: red; }
+  </style>
+</head>
+<body>
+  <h2>Verificación contra la ruta Doradal (los mismos datos que usamos en Kotlin)</h2>
+  <div id="resultado"></div>
+
+  <script src="js/core.js"></script>
+  <script>
+    // Los mismos datos exactos que usamos en DemoVerificacion.kt
+    const ruta = {
+      facturas: [
+        { numeroFactura: "F-EFECTIVO", monto: 8635556, tipo: "PAGO_TOTAL" },
+        { numeroFactura: "F-ABONO", monto: 179826, tipo: "ABONO" },
+      ],
+      gastos: [{ concepto: "Gastos de ruta", monto: 168000 }],
+      conteoBilletes: [
+        { denominacion: "CIEN_MIL", cantidad: 50 },
+        { denominacion: "CINCUENTA_MIL", cantidad: 56 },
+        { denominacion: "VEINTE_MIL", cantidad: 28 },
+        { denominacion: "DIEZ_MIL", cantidad: 24 },
+        { denominacion: "CINCO_MIL", cantidad: 1 },
+        { denominacion: "DOS_MIL", cantidad: 20 },
+      ],
+    };
+
+    const resumen = LiquidacionCalculator.calcular(ruta);
+
+    const esperado = {
+      totalFacturasEfectivo: 8635556,
+      totalAbonosYCobros: 179826,
+      totalGastos: 168000,
+      totalALiquidar: 8647382,
+      totalEnBilletes: 8645000,
+      monedas: 2382,
+    };
+
+    let html = "";
+    for (const clave in esperado) {
+      const obtenido = resumen[clave];
+      const ok = obtenido === esperado[clave];
+      html += `<div class="${ok ? "ok" : "fail"}">${clave}: ${obtenido} (esperado ${esperado[clave]}) -> ${ok ? "OK" : "DIFERENCIA"}</div>`;
+    }
+    document.getElementById("resultado").innerHTML = html;
+  </script>
+</body>
+</html>

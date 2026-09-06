@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de facturas</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila-factura {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .tipos {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tipos button {
+      flex: 1;
+      background: white;
+      border: 1px solid #ccc;
+      color: #555;
+    }
+    .tipos button.activo {
+      background: #1A2B6A;
+      color: white;
+      border-color: #1A2B6A;
+    }
+    .eliminar {
+      background: none;
+      border: none;
+      color: #b00020;
+      font-size: 13px;
+      width: auto;
+      padding: 4px 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>Registro de facturas</header>
+  <main>
+    <div id="listaFacturas"></div>
+
+    <div class="tipos">
+      <button id="botonPagoTotal" class="activo">Pago total</button>
+      <button id="botonAbono">Abono</button>
+    </div>
+
+    <div class="campo">
+      <label>N.° de factura (opcional)</label>
+      <input id="numeroFactura" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Monto</label>
+      <input id="monto" type="text" inputmode="numeric">
+    </div>
+    <button class="boton-primario" id="botonGuardar">Guardar factura</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+    let tipoSeleccionado = "PAGO_TOTAL";
+
+    document.getElementById("botonPagoTotal").addEventListener("click", () => {
+      tipoSeleccionado = "PAGO_TOTAL";
+      document.getElementById("botonPagoTotal").classList.add("activo");
+      document.getElementById("botonAbono").classList.remove("activo");
+    });
+
+    document.getElementById("botonAbono").addEventListener("click", () => {
+      tipoSeleccionado = "ABONO";
+      document.getElementById("botonAbono").classList.add("activo");
+      document.getElementById("botonPagoTotal").classList.remove("activo");
+    });
+
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    async function refrescarLista() {
+      const facturas = await RutaDao.obtenerPorRuta("facturas", rutaId);
+      const contenedor = document.getElementById("listaFacturas");
+      contenedor.innerHTML = "";
+
+      facturas.forEach((factura, indice) => {
+        const etiquetaTipo = factura.tipo === "PAGO_TOTAL" ? "pago total" : "abono";
+        const etiquetaFactura = factura.numeroFactura ? `FEFP${factura.numeroFactura}` : "Sin N.° de factura";
+
+        const fila = document.createElement("div");
+        fila.className = "fila-factura";
+        fila.innerHTML = `
+          <div>
+            <div>${indice + 1}. ${etiquetaFactura} · ${etiquetaTipo}</div>
+            <div>$${formatoMiles(factura.monto)}</div>
+          </div>
+          <button class="eliminar" data-id="${factura.id}">Eliminar</button>
+        `;
+        contenedor.appendChild(fila);
+      });
+
+      contenedor.querySelectorAll(".eliminar").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          const confirmado = confirm("¿Eliminar esta factura? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          await RutaDao.eliminarDe("facturas", Number(boton.dataset.id));
+          refrescarLista();
+        });
+      });
+    }
+
+    document.getElementById("monto").addEventListener("input", (evento) => {
+      const soloDigitos = evento.target.value.replace(/\D/g, "");
+      evento.target.value = soloDigitos ? formatoMiles(Number(soloDigitos)) : "";
+    });
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const numeroFactura = document.getElementById("numeroFactura").value.trim();
+      const monto = parseInt(document.getElementById("monto").value.replace(/\./g, "")) || 0;
+
+      if (monto <= 0) {
+        alert("Ingresa un monto antes de guardar");
+        return;
+      }
+
+      await RutaDao.insertarEn("facturas", {
+        rutaId,
+        numeroFactura,
+        monto,
+        tipo: tipoSeleccionado,
+      });
+
+      document.getElementById("numeroFactura").value = "";
+      document.getElementById("monto").value = "";
+      refrescarLista();
+    });
+
+    refrescarLista();
+  </script>
+</body>
+</html>

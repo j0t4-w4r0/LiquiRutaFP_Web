@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descuento de productos</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .fila.destacado {
+      font-weight: 600;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>Descuento de productos</header>
+  <main>
+    <p style="color:#555;font-size:14px">Úsalo cuando el cliente no te reciba algún producto de la factura.</p>
+
+    <div class="campo">
+      <label>Valor total del producto</label>
+      <input id="valorTotalProducto" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Cantidad inicial</label>
+      <input id="cantidadInicial" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Cantidad a descontar</label>
+      <input id="cantidadADescontar" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Total de la factura</label>
+      <input id="totalFactura" type="text" inputmode="numeric">
+    </div>
+
+    <hr style="border:none;border-top:1px solid #ddd;margin:14px 0">
+    <div class="fila"><span>Descuento</span><span id="resultadoDescuento">$0</span></div>
+    <div class="fila destacado"><span>Total a pagar</span><span id="resultadoTotalAPagar">$0</span></div>
+  </main>
+
+  <script>
+    function formatoMiles(numero) {
+      return numero.toLocaleString("es-CO");
+    }
+
+    function formatearMientrasEscribe(id) {
+      document.getElementById(id).addEventListener("input", (evento) => {
+        const soloDigitos = evento.target.value.replace(/\D/g, "");
+        evento.target.value = soloDigitos ? formatoMiles(Number(soloDigitos)) : "";
+        calcular();
+      });
+    }
+
+    function numero(id) {
+      return parseInt(document.getElementById(id).value.replace(/\./g, "")) || 0;
+    }
+
+    function calcular() {
+      const valorTotalProducto = numero("valorTotalProducto");
+      const cantidadInicial = numero("cantidadInicial");
+      const cantidadADescontar = numero("cantidadADescontar");
+      const totalFactura = numero("totalFactura");
+
+      let descuento = 0;
+      if (cantidadInicial > 0) {
+        const valorUnitario = valorTotalProducto / cantidadInicial;
+        descuento = Math.round(valorUnitario * cantidadADescontar);
+      }
+      const totalAPagar = totalFactura - descuento;
+
+      document.getElementById("resultadoDescuento").textContent = `$${formatoMiles(descuento)}`;
+      document.getElementById("resultadoTotalAPagar").textContent = `$${formatoMiles(totalAPagar)}`;
+    }
+
+    ["valorTotalProducto", "cantidadInicial", "cantidadADescontar", "totalFactura"].forEach(formatearMientrasEscribe);
+  </script>
+</body>
+</html>

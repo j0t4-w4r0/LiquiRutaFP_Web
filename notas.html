@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas de facturas</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .fila-nota {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .fila-nota .titulo {
+      font-weight: 500;
+    }
+    .fila-nota .observacion {
+      color: #555;
+      font-size: 14px;
+    }
+    .eliminar {
+      background: none;
+      border: none;
+      color: #b00020;
+      font-size: 13px;
+      width: auto;
+      padding: 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>Notas de facturas</header>
+  <main>
+    <div id="listaNotas"></div>
+
+    <div class="campo">
+      <label>N.° de factura</label>
+      <input id="numeroFactura" type="text" inputmode="numeric">
+    </div>
+    <div class="campo">
+      <label>Cliente</label>
+      <input id="cliente" type="text">
+    </div>
+    <div class="campo">
+      <label>Observación</label>
+      <textarea id="observacion" rows="3"></textarea>
+    </div>
+    <button class="boton-primario" id="botonGuardar">Guardar nota</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+
+    async function refrescarLista() {
+      const notas = await RutaDao.obtenerPorRuta("notas", rutaId);
+      const contenedor = document.getElementById("listaNotas");
+      contenedor.innerHTML = "";
+
+      notas.forEach((nota) => {
+        const fila = document.createElement("div");
+        fila.className = "fila-nota";
+        fila.innerHTML = `
+          <div class="titulo">Factura FEFP${nota.numeroFactura} · ${nota.cliente}</div>
+          <div class="observacion">${nota.observacion}</div>
+          <button class="eliminar" data-id="${nota.id}">Eliminar</button>
+        `;
+        contenedor.appendChild(fila);
+      });
+
+      contenedor.querySelectorAll(".eliminar").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          const confirmado = confirm("¿Eliminar esta nota? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          await RutaDao.eliminarDe("notas", Number(boton.dataset.id));
+          refrescarLista();
+        });
+      });
+    }
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const numeroFactura = document.getElementById("numeroFactura").value.trim();
+      const cliente = document.getElementById("cliente").value.trim();
+      const observacion = document.getElementById("observacion").value.trim();
+
+      if (!numeroFactura || !observacion) {
+        alert("Completa el número de factura y la observación antes de guardar");
+        return;
+      }
+
+      await RutaDao.insertarEn("notas", { rutaId, numeroFactura, cliente, observacion });
+
+      document.getElementById("numeroFactura").value = "";
+      document.getElementById("cliente").value = "";
+      document.getElementById("observacion").value = "";
+      refrescarLista();
+    });
+
+    refrescarLista();
+  </script>
+</body>
+</html>
