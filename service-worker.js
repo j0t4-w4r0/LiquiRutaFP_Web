@@ -1,6 +1,7 @@
-const NOMBRE_CACHE = "liquiruta-v1";
+const NOMBRE_CACHE = "liquiruta-v2";
 
 const ARCHIVOS_A_GUARDAR = [
+  "./",
   "index.html",
   "nueva-ruta.html",
   "ruta.html",
@@ -41,7 +42,7 @@ self.addEventListener("activate", (evento) => {
 
 self.addEventListener("fetch", (evento) => {
   evento.respondWith(
-    caches.match(evento.request).then((respuestaGuardada) => {
+    caches.match(evento.request, { ignoreSearch: true }).then((respuestaGuardada) => {
       return respuestaGuardada || fetch(evento.request);
     })
   );
