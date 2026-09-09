@@ -19,8 +19,14 @@ header {
   padding: 16px 20px;
   font-size: 18px;
   font-weight: 500;
+  display: flex;
 }
-
+header a {
+  color: rgb(238, 129, 5);
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
 main {
   padding: 20px;
   display: flex;
