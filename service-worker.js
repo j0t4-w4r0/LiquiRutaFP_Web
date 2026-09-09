@@ -1,4 +1,4 @@
-const NOMBRE_CACHE = "liquiruta-v3";
+const NOMBRE_CACHE = "liquiruta-v4";
 
 const ARCHIVOS_A_GUARDAR = [
   "./",
