@@ -1,4 +1,4 @@
-const NOMBRE_CACHE = "liquiruta-v2";
+const NOMBRE_CACHE = "liquiruta-v3";
 
 const ARCHIVOS_A_GUARDAR = [
   "./",
@@ -23,6 +23,7 @@ const ARCHIVOS_A_GUARDAR = [
 ];
 
 self.addEventListener("install", (evento) => {
+  self.skipWaiting();
   evento.waitUntil(
     caches.open(NOMBRE_CACHE).then((cache) => cache.addAll(ARCHIVOS_A_GUARDAR))
   );
@@ -36,7 +37,7 @@ self.addEventListener("activate", (evento) => {
           .filter((nombre) => nombre !== NOMBRE_CACHE)
           .map((nombre) => caches.delete(nombre))
       )
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
