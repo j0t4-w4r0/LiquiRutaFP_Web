@@ -91,3 +91,181 @@ label {
   padding: 14px;
   border: 1px solid #ddd;
 }
+/* Página en construcción */
+
+.construccion {
+  margin-top: 18px;
+  padding: 20px 10px;
+  text-align: center;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.construccion h2 {
+  color: #1A2B6A;
+  font-size: 20px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.construccion p {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Personaje */
+
+.trabajador {
+  position: relative;
+  width: 120px;
+  height: 125px;
+  margin: 0 auto;
+  animation: movimiento-trabajador 1.2s infinite ease-in-out;
+}
+
+.cabeza {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  background-color: #f0b27a;
+  border-radius: 50%;
+  top: 5px;
+  left: 39px;
+  z-index: 3;
+}
+
+.casco {
+  position: absolute;
+  width: 52px;
+  height: 25px;
+  background-color: #f5b400;
+  border-radius: 30px 30px 8px 8px;
+  top: -7px;
+  left: -5px;
+}
+
+.casco::after {
+  content: "";
+  position: absolute;
+  width: 62px;
+  height: 7px;
+  background-color: #f5b400;
+  border-radius: 8px;
+  left: -5px;
+  bottom: -3px;
+}
+
+.cara {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: #222;
+  border-radius: 50%;
+  left: 11px;
+  top: 20px;
+  box-shadow: 16px 0 #222;
+}
+
+.cuerpo {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  background-color: #f28c00;
+  border-radius: 12px 12px 8px 8px;
+  top: 46px;
+  left: 36px;
+}
+
+.cuerpo::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 48px;
+  background-color: #ffe066;
+  left: 20px;
+  top: 0;
+}
+
+.brazo {
+  position: absolute;
+  width: 12px;
+  height: 42px;
+  background-color: #f0b27a;
+  border-radius: 10px;
+  top: 48px;
+  z-index: 2;
+  transform-origin: top center;
+}
+
+.brazo-izquierdo {
+  left: 28px;
+  transform: rotate(35deg);
+}
+
+.brazo-derecho {
+  right: 28px;
+  transform: rotate(-35deg);
+  animation: brazo-trabajando 0.5s infinite alternate ease-in-out;
+}
+
+.pierna {
+  position: absolute;
+  width: 14px;
+  height: 38px;
+  background-color: #1d3557;
+  border-radius: 8px;
+  top: 87px;
+}
+
+.pierna-izquierda {
+  left: 42px;
+  transform: rotate(8deg);
+}
+
+.pierna-derecha {
+  right: 42px;
+  transform: rotate(-8deg);
+}
+
+.herramienta {
+  position: absolute;
+  font-size: 30px;
+  right: 2px;
+  top: 53px;
+  transform: rotate(-35deg);
+  animation: martillo 0.5s infinite alternate ease-in-out;
+  z-index: 4;
+}
+
+@keyframes movimiento-trabajador {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes brazo-trabajando {
+  from {
+    transform: rotate(-35deg);
+  }
+
+  to {
+    transform: rotate(-65deg);
+  }
+}
+
+@keyframes martillo {
+  from {
+    transform: rotate(-25deg);
+  }
+
+  to {
+    transform: rotate(10deg);
+  }
+}
