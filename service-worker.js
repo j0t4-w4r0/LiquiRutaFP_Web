@@ -1,4 +1,4 @@
-const NOMBRE_CACHE = "liquiruta-v5";
+const NOMBRE_CACHE = "liquiruta-app-v1";
 
 const ARCHIVOS_A_GUARDAR = [
   "./",
@@ -22,29 +22,64 @@ const ARCHIVOS_A_GUARDAR = [
   "icons/icon-512.png",
 ];
 
+
 self.addEventListener("install", (evento) => {
-  self.skipWaiting();
   evento.waitUntil(
-    caches.open(NOMBRE_CACHE).then((cache) => cache.addAll(ARCHIVOS_A_GUARDAR))
+    caches.open(NOMBRE_CACHE).then((cache) => {
+      return cache.addAll(ARCHIVOS_A_GUARDAR);
+    })
   );
+
+  self.skipWaiting();
 });
+
 
 self.addEventListener("activate", (evento) => {
   evento.waitUntil(
-    caches.keys().then((nombres) =>
-      Promise.all(
+    caches.keys().then((nombres) => {
+      return Promise.all(
         nombres
           .filter((nombre) => nombre !== NOMBRE_CACHE)
           .map((nombre) => caches.delete(nombre))
-      )
-    ).then(() => self.clients.claim())
+      );
+    }).then(() => {
+      return self.clients.claim();
+    })
   );
 });
 
+
 self.addEventListener("fetch", (evento) => {
+  if (evento.request.method !== "GET") {
+    return;
+  }
+
+  const url = new URL(evento.request.url);
+
+
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   evento.respondWith(
-    caches.match(evento.request, { ignoreSearch: true }).then((respuestaGuardada) => {
-      return respuestaGuardada || fetch(evento.request);
+    fetch(evento.request, {
+      cache: "no-cache"
     })
+      .then((respuesta) => {
+        if (respuesta && respuesta.ok) {
+          const copia = respuesta.clone();
+
+          caches.open(NOMBRE_CACHE).then((cache) => {
+            cache.put(evento.request, copia);
+          });
+        }
+
+        return respuesta;
+      })
+      .catch(() => {
+        return caches.match(evento.request, {
+          ignoreSearch: true
+        });
+      })
   );
 });
