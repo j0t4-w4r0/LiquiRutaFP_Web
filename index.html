@@ -19,19 +19,28 @@
 
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
+    navigator.serviceWorker.register("service-worker.js")
+      .then((registro) => {
+        console.log("Service Worker registrado correctamente.");
+
+        
+        registro.update();
+
+        // Comprobar nuevamente cuando LiquiRuta vuelve a estar visible
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            registro.update();
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Error registrando el Service Worker:", error);
       });
 
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-          navigator.serviceWorker.getRegistration().then((registro) => {
-            if (registro) registro.update();
-          });
-        }
-      });
-    }
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
+  }
   </script>
 </body>
 </html>
