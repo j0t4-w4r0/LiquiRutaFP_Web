@@ -1,5 +1,5 @@
 const NOMBRE_DB = "liquidacion_rutas";
-const VERSION_DB = 1;
+const VERSION_DB = 2;
 
 function abrirDB() {
   return new Promise((resolve, reject) => {
@@ -8,20 +8,35 @@ function abrirDB() {
     solicitud.onupgradeneeded = (evento) => {
       const db = evento.target.result;
 
-      const rutas = db.createObjectStore("rutas", { keyPath: "id", autoIncrement: true });
-      rutas.createIndex("porId", "id");
+      if (!db.objectStoreNames.contains("rutas")) {
+        const rutas = db.createObjectStore("rutas", { keyPath: "id", autoIncrement: true });
+        rutas.createIndex("porId", "id");
+      }
 
-      const facturas = db.createObjectStore("facturas", { keyPath: "id", autoIncrement: true });
-      facturas.createIndex("porRuta", "rutaId");
+      if (!db.objectStoreNames.contains("facturas")) {
+        const facturas = db.createObjectStore("facturas", { keyPath: "id", autoIncrement: true });
+        facturas.createIndex("porRuta", "rutaId");
+      }
 
-      const gastos = db.createObjectStore("gastos", { keyPath: "id", autoIncrement: true });
-      gastos.createIndex("porRuta", "rutaId");
+      if (!db.objectStoreNames.contains("gastos")) {
+        const gastos = db.createObjectStore("gastos", { keyPath: "id", autoIncrement: true });
+        gastos.createIndex("porRuta", "rutaId");
+      }
 
-      const notas = db.createObjectStore("notas", { keyPath: "id", autoIncrement: true });
-      notas.createIndex("porRuta", "rutaId");
+      if (!db.objectStoreNames.contains("notas")) {
+        const notas = db.createObjectStore("notas", { keyPath: "id", autoIncrement: true });
+        notas.createIndex("porRuta", "rutaId");
+      }
 
-      const conteoBilletes = db.createObjectStore("conteoBilletes", { keyPath: "id", autoIncrement: true });
-      conteoBilletes.createIndex("porRuta", "rutaId");
+      if (!db.objectStoreNames.contains("conteoBilletes")) {
+        const conteoBilletes = db.createObjectStore("conteoBilletes", { keyPath: "id", autoIncrement: true });
+        conteoBilletes.createIndex("porRuta", "rutaId");
+      }
+
+      if (!db.objectStoreNames.contains("transferencias")) {
+        const transferencias = db.createObjectStore("transferencias", { keyPath: "id", autoIncrement: true });
+        transferencias.createIndex("porRuta", "rutaId");
+      }
     };
 
     solicitud.onsuccess = () => resolve(solicitud.result);
@@ -122,6 +137,7 @@ const RutaDao = {
     const gastos = await this.obtenerPorRuta("gastos", rutaId);
     const notas = await this.obtenerPorRuta("notas", rutaId);
     const conteoBilletes = await this.obtenerPorRuta("conteoBilletes", rutaId);
-    return { ruta, facturas, gastos, notas, conteoBilletes };
+    const transferencias = await this.obtenerPorRuta("transferencias", rutaId);
+    return { ruta, facturas, gastos, notas, conteoBilletes, transferencias };
   },
 };

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagos por transferencia</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .miniaturas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .miniatura {
+      position: relative;
+      width: 70px;
+      height: 70px;
+    }
+    .miniatura img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .miniatura button {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #b00020;
+      color: white;
+      border: none;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .boton-foto {
+      background: white;
+      border: 1px dashed #1A2B6A;
+      color: #1A2B6A;
+      font-size: 13px;
+    }
+    .fila-transferencia {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .fila-transferencia .titulo {
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+    }
+    .eliminar {
+      background: none;
+      border: none;
+      color: #b00020;
+      width: auto;
+      padding: 0;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>Pagos por transferencia<a href="index.html" aria-label="Inicio"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></a></header>
+  <main>
+    <div id="listaTransferencias"></div>
+
+    <div class="campo">
+      <label>Cliente</label>
+      <input id="cliente" type="text">
+    </div>
+
+    <label>Foto(s) de la factura</label>
+    <div class="miniaturas" id="miniaturasFacturas"></div>
+    <button class="boton-foto" id="botonFotoFactura" type="button">+ Agregar foto de factura</button>
+    <input type="file" accept="image/*" capture="environment" id="inputFotoFactura" style="display:none">
+
+    <div style="margin-top:16px">
+      <label>Foto del comprobante de pago</label>
+      <div class="miniaturas" id="miniaturaComprobante"></div>
+      <button class="boton-foto" id="botonFotoComprobante" type="button">+ Tomar foto del comprobante</button>
+      <input type="file" accept="image/*" capture="environment" id="inputFotoComprobante" style="display:none">
+    </div>
+
+    <button class="boton-primario" id="botonGuardar" style="margin-top:20px">Guardar pago por transferencia</button>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script>
+    const parametros = new URLSearchParams(window.location.search);
+    const rutaId = Number(parametros.get("id"));
+
+    let fotosFacturas = [];
+    let fotoComprobante = null;
+
+    function dibujarMiniaturas() {
+      const contenedorFacturas = document.getElementById("miniaturasFacturas");
+      contenedorFacturas.innerHTML = "";
+      fotosFacturas.forEach((foto, indice) => {
+        const div = document.createElement("div");
+        div.className = "miniatura";
+        div.innerHTML = `<img src="${URL.createObjectURL(foto)}"><button data-indice="${indice}">×</button>`;
+        contenedorFacturas.appendChild(div);
+      });
+      contenedorFacturas.querySelectorAll("button").forEach((boton) => {
+        boton.addEventListener("click", () => {
+          fotosFacturas.splice(Number(boton.dataset.indice), 1);
+          dibujarMiniaturas();
+        });
+      });
+
+      const contenedorComprobante = document.getElementById("miniaturaComprobante");
+      contenedorComprobante.innerHTML = "";
+      if (fotoComprobante) {
+        const div = document.createElement("div");
+        div.className = "miniatura";
+        div.innerHTML = `<img src="${URL.createObjectURL(fotoComprobante)}"><button id="quitarComprobante">×</button>`;
+        contenedorComprobante.appendChild(div);
+        document.getElementById("quitarComprobante").addEventListener("click", () => {
+          fotoComprobante = null;
+          dibujarMiniaturas();
+        });
+      }
+    }
+
+    document.getElementById("botonFotoFactura").addEventListener("click", () => {
+      document.getElementById("inputFotoFactura").click();
+    });
+    document.getElementById("inputFotoFactura").addEventListener("change", (evento) => {
+      if (evento.target.files[0]) {
+        fotosFacturas.push(evento.target.files[0]);
+        dibujarMiniaturas();
+      }
+      evento.target.value = "";
+    });
+
+    document.getElementById("botonFotoComprobante").addEventListener("click", () => {
+      document.getElementById("inputFotoComprobante").click();
+    });
+    document.getElementById("inputFotoComprobante").addEventListener("change", (evento) => {
+      if (evento.target.files[0]) {
+        fotoComprobante = evento.target.files[0];
+        dibujarMiniaturas();
+      }
+      evento.target.value = "";
+    });
+
+    async function refrescarLista() {
+      const transferencias = await RutaDao.obtenerPorRuta("transferencias", rutaId);
+      const contenedor = document.getElementById("listaTransferencias");
+      contenedor.innerHTML = "";
+
+      transferencias.forEach((transferencia) => {
+        const fila = document.createElement("div");
+        fila.className = "fila-transferencia";
+        fila.innerHTML = `
+          <div class="titulo">
+            <span>${transferencia.cliente}</span>
+            <button class="eliminar" data-id="${transferencia.id}">Eliminar</button>
+          </div>
+          <div style="font-size:12px;color:#888">${transferencia.facturasFotos.length} foto(s) de factura · comprobante ${transferencia.comprobanteFoto ? "adjunto" : "faltante"}</div>
+        `;
+        contenedor.appendChild(fila);
+      });
+
+      contenedor.querySelectorAll(".eliminar").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          const confirmado = confirm("¿Eliminar este pago por transferencia? Esto no se puede deshacer.");
+          if (!confirmado) return;
+          await RutaDao.eliminarDe("transferencias", Number(boton.dataset.id));
+          refrescarLista();
+        });
+      });
+    }
+
+    document.getElementById("botonGuardar").addEventListener("click", async () => {
+      const cliente = document.getElementById("cliente").value.trim();
+
+      if (!cliente || fotosFacturas.length === 0 || !fotoComprobante) {
+        alert("Completa el cliente, al menos una foto de factura, y la foto del comprobante");
+        return;
+      }
+
+      await RutaDao.insertarEn("transferencias", {
+        rutaId,
+        cliente,
+        facturasFotos: fotosFacturas,
+        comprobanteFoto: fotoComprobante,
+        fecha: new Date().toISOString(),
+      });
+
+      document.getElementById("cliente").value = "";
+      fotosFacturas = [];
+      fotoComprobante = null;
+      dibujarMiniaturas();
+      refrescarLista();
+    });
+
+    refrescarLista();
+  </script>
+  <script src="js/menu.js"></script>
+</body>
+</html>

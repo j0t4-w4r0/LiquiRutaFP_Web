@@ -219,6 +219,53 @@
         });
       }
 
+      if (datos.transferencias.length > 0) {
+        documento.addPage();
+        let y3 = 60;
+        documento.setFontSize(14);
+        documento.setFont(undefined, "bold");
+        documento.text("Pagos por Transferencia", 40, y3);
+        y3 += 25;
+
+        function blobADataUrl(blob) {
+          return new Promise((resolve) => {
+            const lector = new FileReader();
+            lector.onloadend = () => resolve(lector.result);
+            lector.readAsDataURL(blob);
+          });
+        }
+
+        const tamanoFoto = 70;
+
+        for (const transferencia of datos.transferencias) {
+          if (y3 > 620) {
+            documento.addPage();
+            y3 = 50;
+          }
+
+          documento.setFontSize(12);
+          documento.setFont(undefined, "bold");
+          documento.text(transferencia.cliente, 40, y3);
+          y3 += 6;
+
+          let x = 40;
+          for (const foto of transferencia.facturasFotos) {
+            const dataUrl = await blobADataUrl(foto);
+            const formato = foto.type.includes("png") ? "PNG" : "JPEG";
+            documento.addImage(dataUrl, formato, x, y3, tamanoFoto, tamanoFoto);
+            x += tamanoFoto + 10;
+          }
+
+          if (transferencia.comprobanteFoto) {
+            const dataUrl = await blobADataUrl(transferencia.comprobanteFoto);
+            const formato = transferencia.comprobanteFoto.type.includes("png") ? "PNG" : "JPEG";
+            documento.addImage(dataUrl, formato, x, y3, tamanoFoto, tamanoFoto);
+          }
+
+          y3 += tamanoFoto + 25;
+        }
+      }
+
       const urlPdf = documento.output("datauristring");
       await RutaDao.actualizarRuta({ ...ruta, cerrada: true, pdfDataUrl: urlPdf });
       mostrarBotonAbrir(urlPdf);
